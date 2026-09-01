@@ -1,0 +1,29 @@
+bcrypt==5.0.0
+flask==3.1.3
+flask-cors==6.0.2
+flask-sqlalchemy==3.1.1
+psycopg2-binary==2.9.11
+PyJWT==2.12.1
+python-dotenv==1.2.2
+rasterio
+numpy
+pandas
+# Must match the version used to serialize the production Isolation Forest.
+scikit-learn==1.9.1
+xgboost
+geopandas
+pydantic
+geoalchemy2
+cdsapi
+osmium
+pyarrow
+anthropic
+requests
+xarray
+netCDF4
+dask
+osmnx
+waitress==3.0.2
+gunicorn==23.0.0; sys_platform != 'win32'
+reportlab>=4.0.0
+git+https://github.com/geo-raypan/wildfire-hotspot-prediction.git
