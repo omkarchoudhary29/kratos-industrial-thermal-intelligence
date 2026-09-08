@@ -1,0 +1,263 @@
+"""
+pipeline/db/
+------------
+DB setup: create database, enable PostGIS, create tables, seed initial data.
+Runs once at startup before checks and pipeline stages.
+"""
+
+from __future__ import annotations
+
+
+# Canonical column set for event_timesteps — drop & recreate if stale.
+_REQUIRED_COLS = {
+    "id", "event_id", "slot_time", "nearest_t1", "gap_hours", "data_gap_warn",
+    "created_at",
+}
+
+
+def setup_db(app) -> None:
+    """Create DB + PostGIS, create all tables, seed fire events if empty."""
+    from db.connection import ensure_db, seed_db, db
+
+    ensure_db()
+    with app.app_context():
+        if db.engine.dialect.name == "postgresql":
+            _migrate_event_timesteps(db)
+            _migrate_users(db)        # must run before create_all (updates legacy auth schemas)
+        db.create_all()
+        if db.engine.dialect.name == "postgresql":
+            _ensure_event_timestep_unique_index(db)
+            _migrate_live_fire_monitoring(db)
+            _migrate_field_reports(db)
+            _migrate_fire_events(db)
+        seed_db()
+
+
+def _migrate_live_fire_monitoring(db) -> None:
+    """Add durable NRT constraints/indexes to new or previously-created tables."""
+    from sqlalchemy import inspect, text
+
+    tables = set(inspect(db.engine).get_table_names())
+    if not {"fire_detections", "monitoring_fire_events", "fire_alerts"}.issubset(tables):
+        return
+    inspector = inspect(db.engine)
+    detection_columns = {
+        column["name"] for column in inspector.get_columns("fire_detections")
+    }
+    event_columns = {
+        column["name"] for column in inspector.get_columns("monitoring_fire_events")
+    }
+    with db.engine.begin() as conn:
+        if "monitoring_region_id" not in event_columns:
+            conn.execute(text(
+                "ALTER TABLE monitoring_fire_events ADD COLUMN "
+                "monitoring_region_id INTEGER REFERENCES fire_events(id)"
+            ))
+        if "monitoring_region_id" not in detection_columns:
+            conn.execute(text(
+                "ALTER TABLE fire_detections ADD COLUMN "
+                "monitoring_region_id INTEGER REFERENCES fire_events(id)"
+            ))
+        if "landcover_group" not in detection_columns:
+            conn.execute(text(
+                "ALTER TABLE fire_detections ADD COLUMN landcover_group VARCHAR(32)"
+            ))
+        if "inside_industrial_polygon" not in detection_columns:
+            conn.execute(text(
+                "ALTER TABLE fire_detections ADD COLUMN inside_industrial_polygon BOOLEAN"
+            ))
+        if "near_industrial_facility" not in detection_columns:
+            conn.execute(text(
+                "ALTER TABLE fire_detections ADD COLUMN near_industrial_facility BOOLEAN"
+            ))
+    statements = (
+        "CREATE UNIQUE INDEX IF NOT EXISTS uq_fire_detections_detection_key "
+        "ON fire_detections (detection_key)",
+        "CREATE INDEX IF NOT EXISTS ix_fire_detections_acquisition_time "
+        "ON fire_detections (acquisition_time)",
+        "CREATE INDEX IF NOT EXISTS ix_fire_detections_event_id "
+        "ON fire_detections (fire_event_id)",
+        "CREATE INDEX IF NOT EXISTS ix_fire_detections_region "
+        "ON fire_detections (monitoring_region_id)",
+        "CREATE INDEX IF NOT EXISTS ix_fire_detections_location_gist "
+        "ON fire_detections USING GIST (location)",
+        "CREATE INDEX IF NOT EXISTS ix_monitoring_fire_events_location_gist "
+        "ON monitoring_fire_events USING GIST (location)",
+        "CREATE INDEX IF NOT EXISTS ix_monitoring_fire_events_region "
+        "ON monitoring_fire_events (monitoring_region_id)",
+        "CREATE UNIQUE INDEX IF NOT EXISTS uq_fire_alerts_deduplication_key "
+        "ON fire_alerts (deduplication_key)",
+    )
+    with db.engine.begin() as conn:
+        for statement in statements:
+            conn.execute(text(statement))
+
+
+def _migrate_field_reports(db) -> None:
+    """Add new columns to field_reports if they are missing (safe, additive migration)."""
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(db.engine)
+    if "field_reports" not in inspector.get_table_names():
+        return  # table doesn't exist yet — create_all() will handle it
+
+    existing = {col["name"] for col in inspector.get_columns("field_reports")}
+    new_cols = {
+        "like_count": "INTEGER NOT NULL DEFAULT 0",
+        "flag_count":  "INTEGER NOT NULL DEFAULT 0",
+    }
+    with db.engine.connect() as conn:
+        for col, definition in new_cols.items():
+            if col not in existing:
+                print(f"[db] field_reports: adding column {col}")
+                conn.execute(text(f"ALTER TABLE field_reports ADD COLUMN {col} {definition}"))
+        conn.commit()
+
+    # field_report_comments.like_count
+    if "field_report_comments" in inspector.get_table_names():
+        comment_cols = {col["name"] for col in inspector.get_columns("field_report_comments")}
+        if "like_count" not in comment_cols:
+            print("[db] field_report_comments: adding column like_count")
+            with db.engine.connect() as conn:
+                conn.execute(text("ALTER TABLE field_report_comments ADD COLUMN like_count INTEGER NOT NULL DEFAULT 0"))
+                conn.commit()
+
+
+def _migrate_users(db) -> None:
+    """Migrate prior credential or OAuth users without breaking report FKs.
+
+    OAuth-only identities are retained under locked ``oauth_migrated_<id>``
+    usernames with unusable password hashes. This preserves authorship on
+    existing crowd data while removing all provider-specific columns.
+    """
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(db.engine)
+    if "users" not in inspector.get_table_names():
+        return
+    existing = {col["name"] for col in inspector.get_columns("users")}
+    additions = {
+        "username": "VARCHAR(50)",
+        "password_hash": "VARCHAR(128)",
+        "email": "VARCHAR(255)",
+        "is_admin": "BOOLEAN NOT NULL DEFAULT FALSE",
+        "chat_count": "INTEGER NOT NULL DEFAULT 0",
+        "chat_count_date": "DATE",
+        "created_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+    }
+
+    print("[db] users: migrating authentication schema")
+    with db.engine.connect() as conn:
+        for column, definition in additions.items():
+            if column not in existing:
+                conn.execute(text(f"ALTER TABLE users ADD COLUMN {column} {definition}"))
+
+        if "password" in existing:
+            conn.execute(text(
+                "UPDATE users SET password_hash = CAST(password AS VARCHAR) "
+                "WHERE password_hash IS NULL"
+            ))
+        if "github_login" in existing:
+            conn.execute(text(
+                "UPDATE users SET username = 'oauth_migrated_' || id "
+                "WHERE username IS NULL"
+            ))
+
+        conn.execute(text(
+            "UPDATE users SET username = 'user_' || id WHERE username IS NULL"
+        ))
+        conn.execute(text(
+            "UPDATE users SET password_hash = '!' WHERE password_hash IS NULL"
+        ))
+        conn.execute(text("UPDATE users SET is_admin = FALSE WHERE is_admin IS NULL"))
+        conn.execute(text("ALTER TABLE users ALTER COLUMN username SET NOT NULL"))
+        conn.execute(text("ALTER TABLE users ALTER COLUMN password_hash SET NOT NULL"))
+        conn.execute(text(
+            "WITH ranked AS ("
+            "SELECT id, ROW_NUMBER() OVER (PARTITION BY LOWER(TRIM(email)) ORDER BY id) AS position "
+            "FROM users WHERE email IS NOT NULL"
+            ") UPDATE users SET email = NULL FROM ranked "
+            "WHERE users.id = ranked.id AND ranked.position > 1"
+        ))
+        conn.execute(text("UPDATE users SET email = LOWER(TRIM(email)) WHERE email IS NOT NULL"))
+        conn.execute(text("UPDATE users SET email = NULL WHERE email = ''"))
+        conn.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_username ON users (username)"
+        ))
+        conn.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_email ON users (email) "
+            "WHERE email IS NOT NULL"
+        ))
+
+        for legacy_column in ("github_id", "github_login", "avatar_url", "password"):
+            if legacy_column in existing:
+                conn.execute(text(
+                    f"ALTER TABLE users DROP COLUMN {legacy_column} CASCADE"
+                ))
+        conn.commit()
+
+
+def _migrate_fire_events(db) -> None:
+    """Add replay_ms column to fire_events if missing."""
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(db.engine)
+    if "fire_events" not in inspector.get_table_names():
+        return
+    existing = {col["name"] for col in inspector.get_columns("fire_events")}
+    if "replay_ms" not in existing:
+        print("[db] fire_events: adding column replay_ms")
+        with db.engine.connect() as conn:
+            conn.execute(text("ALTER TABLE fire_events ADD COLUMN replay_ms BIGINT"))
+            conn.commit()
+
+
+def _migrate_event_timesteps(db) -> None:
+    """Drop event_timesteps if its columns don't match the current schema.
+
+    event_timesteps is fully rebuilt by the pipeline on every run, so dropping
+    it is always safe — no data is lost that can't be regenerated.
+    """
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(db.engine)
+    if "event_timesteps" not in inspector.get_table_names():
+        return  # table doesn't exist yet — create_all() will handle it
+
+    existing = {col["name"] for col in inspector.get_columns("event_timesteps")}
+    if existing == _REQUIRED_COLS:
+        return  # schema is current
+
+    print(f"[db] event_timesteps schema mismatch — dropping and recreating")
+    with db.engine.connect() as conn:
+        conn.execute(text("DROP TABLE event_timesteps CASCADE"))
+        conn.commit()
+
+
+def _ensure_event_timestep_unique_index(db) -> None:
+    """Enforce one row per event/slot on existing PostgreSQL databases."""
+    from sqlalchemy import text
+
+    with db.engine.begin() as conn:
+        duplicate_count = conn.execute(text(
+            "SELECT COUNT(*) FROM event_timesteps AS newer "
+            "WHERE EXISTS ("
+            "SELECT 1 FROM event_timesteps AS older "
+            "WHERE older.event_id = newer.event_id "
+            "AND older.slot_time = newer.slot_time "
+            "AND older.id < newer.id)"
+        )).scalar_one()
+        if duplicate_count:
+            conn.execute(text(
+                "DELETE FROM event_timesteps AS newer "
+                "USING event_timesteps AS older "
+                "WHERE newer.event_id = older.event_id "
+                "AND newer.slot_time = older.slot_time "
+                "AND newer.id > older.id"
+            ))
+            print(f"[db] removed {duplicate_count} duplicate event timestep(s)")
+
+        conn.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_event_timesteps_event_slot "
+            "ON event_timesteps (event_id, slot_time)"
+        ))
