@@ -1,0 +1,59 @@
+{
+  "analysis_mode": "thermal_monitoring",
+  "region": {
+    "event_id": 9,
+    "region_id": "kanha_pench",
+    "name": "Kanha Forest Landscape Monitoring",
+    "state": "Madhya Pradesh",
+    "country_code": "in",
+    "monitoring_focus": "forest",
+    "bbox": [
+      80.35,
+      21.8,
+      81.05,
+      22.55
+    ]
+  },
+  "classification": {
+    "status": "not_configured",
+    "message": "Wildfire LR prediction is not applied to industrial thermal detections."
+  },
+  "fire": {
+    "burned_area_km2": null,
+    "new_area_km2": null,
+    "growth_rate_km2h": null,
+    "n_hotspots": 0,
+    "frp_sum": 0.0
+  },
+  "thermal": {
+    "detection_count": 0,
+    "frp_mean_mw": null,
+    "frp_max_mw": null,
+    "brightness_ti4_max_k": null,
+    "inside_midc_count": 0,
+    "inside_industrial_area_count": 0,
+    "near_industrial_facility_count": 0,
+    "confidence_counts": {},
+    "landcover_group_counts": {},
+    "classification_counts": {
+      "industrial_fire": 0,
+      "gas_flare": 0,
+      "agricultural_burning": 8,
+      "mining_activity": 0,
+      "wildfire": 0,
+      "industrial_process_heat": 0,
+      "unknown": 0
+    },
+    "emergency_candidate_count": 0,
+    "classification_mean_confidence": 0.9287,
+    "persistence_level_counts": {
+      "LOW": 7,
+      "MEDIUM": 1
+    },
+    "persistent_source_count": 8,
+    "satellites": [],
+    "nearest_industries": []
+  },
+  "fwi_t1": {},
+  "observation_time": "2026-11-17T01:46:00"
+}

@@ -1,0 +1,59 @@
+{
+  "analysis_mode": "thermal_monitoring",
+  "region": {
+    "event_id": 2,
+    "region_id": "vijayanagar",
+    "name": "Vijayanagar / Toranagallu Industrial Region Monitoring",
+    "state": "Karnataka",
+    "country_code": "in",
+    "monitoring_focus": "industrial",
+    "bbox": [
+      76.58,
+      15.1,
+      76.76,
+      15.24
+    ]
+  },
+  "classification": {
+    "status": "not_configured",
+    "message": "Wildfire LR prediction is not applied to industrial thermal detections."
+  },
+  "fire": {
+    "burned_area_km2": null,
+    "new_area_km2": null,
+    "growth_rate_km2h": null,
+    "n_hotspots": 0,
+    "frp_sum": 0.0
+  },
+  "thermal": {
+    "detection_count": 0,
+    "frp_mean_mw": null,
+    "frp_max_mw": null,
+    "brightness_ti4_max_k": null,
+    "inside_midc_count": 0,
+    "inside_industrial_area_count": 0,
+    "near_industrial_facility_count": 0,
+    "confidence_counts": {},
+    "landcover_group_counts": {},
+    "classification_counts": {
+      "industrial_fire": 0,
+      "gas_flare": 0,
+      "agricultural_burning": 0,
+      "mining_activity": 0,
+      "wildfire": 0,
+      "industrial_process_heat": 0,
+      "unknown": 3
+    },
+    "emergency_candidate_count": 0,
+    "classification_mean_confidence": 0.4867,
+    "persistence_level_counts": {
+      "LOW": 2,
+      "MEDIUM": 1
+    },
+    "persistent_source_count": 3,
+    "satellites": [],
+    "nearest_industries": []
+  },
+  "fwi_t1": {},
+  "observation_time": "2026-11-17T13:41:00"
+}

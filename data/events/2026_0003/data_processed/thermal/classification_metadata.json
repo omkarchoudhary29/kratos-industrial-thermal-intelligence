@@ -1,0 +1,27 @@
+{
+  "event_id": 3,
+  "classified_source_count": 12,
+  "class_counts": {
+    "industrial_fire": 1,
+    "gas_flare": 0,
+    "agricultural_burning": 1,
+    "mining_activity": 7,
+    "wildfire": 0,
+    "industrial_process_heat": 1,
+    "unknown": 2
+  },
+  "emergency_candidate_count": 1,
+  "mean_confidence": 0.8442,
+  "method": "explainable_rules_v3",
+  "class_labels": [
+    "industrial_fire",
+    "gas_flare",
+    "agricultural_burning",
+    "mining_activity",
+    "wildfire",
+    "industrial_process_heat",
+    "unknown"
+  ],
+  "is_trained_model": false,
+  "generated_at": "2026-11-18T09:56:21.065877+00:00"
+}

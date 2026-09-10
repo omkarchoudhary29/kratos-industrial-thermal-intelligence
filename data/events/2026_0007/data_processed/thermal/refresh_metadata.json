@@ -1,0 +1,27 @@
+{
+  "event_id": 7,
+  "status": "succeeded",
+  "last_attempt_at": "2026-11-18T12:55:26.959134+00:00",
+  "last_success_at": "2026-11-18T12:55:32.032005+00:00",
+  "last_observed_at": "2026-11-17T21:40:00+00:00",
+  "interval_hours": 0.25,
+  "lookback_days": 2,
+  "error": null,
+  "next_refresh_at": "2026-11-18T13:10:32.032005+00:00",
+  "observation_count": 40,
+  "new_observation_count": 0,
+  "data_changed": false,
+  "fetched_record_count": 5,
+  "source_errors": [],
+  "ingestion": {
+    "records_received": 10,
+    "duplicates": 10,
+    "new_records": 0,
+    "predictions_completed": 0,
+    "prediction_failures": 0,
+    "events_created": 0,
+    "events_updated": 0,
+    "alerts_created": 0,
+    "malformed_records": 0
+  }
+}

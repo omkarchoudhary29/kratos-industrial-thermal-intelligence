@@ -1,0 +1,10 @@
+{
+  "affected_population": null,
+  "at_risk_3h": null,
+  "at_risk_6h": null,
+  "at_risk_12h": null,
+  "data_available": false,
+  "exposure_mode": "forecast_zones",
+  "reason": "Population dataset is not configured for this region.",
+  "source": null
+}

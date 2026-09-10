@@ -1,0 +1,18 @@
+{
+  "event_id": 5,
+  "data_available": true,
+  "observation_count": 48,
+  "first_observed_at": "2026-11-14T07:30:00+00:00",
+  "last_observed_at": "2026-11-17T20:40:00+00:00",
+  "current_observation_count": 14,
+  "current_observation_date": "2026-11-17",
+  "duplicates_removed": 0,
+  "raw_file_count": 8,
+  "source_products": [
+    "VIIRS_NOAA20_NRT",
+    "VIIRS_NOAA21_NRT"
+  ],
+  "requested_start_date": "2026-07-29",
+  "requested_end_date": "2026-08-27",
+  "generated_at": "2026-11-18T12:55:21.567934+00:00"
+}

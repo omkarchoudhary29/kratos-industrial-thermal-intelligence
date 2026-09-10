@@ -1,0 +1,13 @@
+{
+  "event_id": 9,
+  "boundary_provider": "none",
+  "industrial_context_provider": "osm_overpass",
+  "boundary_source_url": "https://gis.midcindia.org/server/rest/services/CitizenPortal/MIDC_PUBLIC_MAIN_MAP_SERVICE/MapServer/6",
+  "boundary_source_note": "MIDC Enterprise GIS reference boundary; not a legal survey.",
+  "osm_source_url": "https://www.openstreetmap.org/",
+  "osm_attribution": "OpenStreetMap contributors",
+  "midc_boundary_count": 0,
+  "industrial_area_count": 71,
+  "industrial_facility_count": 544,
+  "generated_at": "2026-11-18T11:35:17.806842+00:00"
+}

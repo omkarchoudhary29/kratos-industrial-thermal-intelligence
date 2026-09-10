@@ -1,0 +1,18 @@
+{
+  "event_id": 5,
+  "observation_count": 48,
+  "inside_midc_count": 0,
+  "inside_industrial_area_count": 1,
+  "near_industrial_facility_count": 38,
+  "industrial_context_available_count": 0,
+  "near_distance_threshold_m": 1000.0,
+  "landcover_group_counts": {
+    "vegetation": 25,
+    "bare": 14,
+    "agricultural": 8,
+    "built_up": 1
+  },
+  "classification_available": false,
+  "classification_note": "Context enrichment only; no classifier or persistence label was applied.",
+  "generated_at": "2026-11-18T09:57:03.119286+00:00"
+}

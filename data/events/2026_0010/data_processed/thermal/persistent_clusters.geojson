@@ -1,0 +1,59 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          82.167099375,
+          19.100095
+        ]
+      },
+      "properties": {
+        "cluster_id": "cluster_001",
+        "detection_count": 8,
+        "raw_observation_count": 12,
+        "unique_active_days": 4,
+        "first_seen": "2026-11-14T07:28:00+00:00",
+        "last_seen": "2026-11-17T20:19:30+00:00",
+        "active_duration_days": 3.536,
+        "mean_frp": 2.819375,
+        "max_frp": 5.53,
+        "median_frp": 1.7325,
+        "frp_std": 1.711166337436253,
+        "frp_peak_ratio": 3.1919,
+        "frp_coefficient_variation": 0.6069,
+        "day_detection_count": 3,
+        "night_detection_count": 5,
+        "night_ratio": 0.625,
+        "sensor_count": 2,
+        "satellites": "N20,N21",
+        "coordinate_variance_m2": 69643.33298968464,
+        "max_distance_from_center_m": 341.39743991407494,
+        "scan_max_km": 0.65,
+        "track_max_km": 0.73,
+        "thermal_footprint_radius_m": 830.12,
+        "thermal_footprint_area_km2": 2.1649,
+        "thermal_footprint_method": "FIRMS pixel plus observation-cluster envelope",
+        "active_day_density": 0.8819,
+        "inside_industrial_polygon": true,
+        "near_industrial_facility": true,
+        "distance_to_nearest_industry_m": 634.1831703183135,
+        "nearest_industry_name": "Nagarnar Steel Plant",
+        "nearest_industry_type": "steelmaking",
+        "nearest_industry_operator": "NMDC Limited",
+        "nearest_power_source": null,
+        "nearest_electricity_output": null,
+        "industrial_feature_count_500m": 0.0,
+        "industrial_feature_count_1km": 2.0,
+        "landcover_group": "built_up",
+        "landcover_class": "built_up",
+        "forest_fraction_500m": 0.17721518987341772,
+        "cropland_fraction_500m": 0.11904761904761904,
+        "builtup_fraction_500m": 0.7901234567901234,
+        "persistence_level": "MEDIUM"
+      }
+    }
+  ]
+}

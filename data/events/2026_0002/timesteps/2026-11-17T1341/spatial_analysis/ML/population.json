@@ -1,0 +1,9 @@
+{
+  "within_1km": null,
+  "within_3km": null,
+  "within_5km": null,
+  "data_available": false,
+  "exposure_mode": "proximity_buffers",
+  "reason": "Population dataset is not configured for this region.",
+  "source": null
+}

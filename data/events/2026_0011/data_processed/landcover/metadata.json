@@ -1,0 +1,23 @@
+{
+  "event_id": 11,
+  "provider": "esa_worldcover_2021",
+  "data_available": true,
+  "product": "ESA WorldCover 2021 v200",
+  "source_url": "https://esa-worldcover.org/",
+  "license": "CC BY 4.0",
+  "resolution_m": 100,
+  "classes": {
+    "10": "tree_cover",
+    "20": "shrubland",
+    "30": "grassland",
+    "40": "cropland",
+    "50": "built_up",
+    "60": "bare_sparse_vegetation",
+    "70": "snow_and_ice",
+    "80": "permanent_water",
+    "90": "herbaceous_wetland",
+    "95": "mangroves",
+    "100": "moss_and_lichen"
+  },
+  "generated_at": "2026-11-17T10:09:01.912610+00:00"
+}

@@ -1,0 +1,16 @@
+{
+  "event_id": 3,
+  "raw_observation_count": 238,
+  "aggregated_detection_count": 100,
+  "multi_sensor_duplicates_collapsed": 138,
+  "persistent_source_count": 12,
+  "persistence_level_counts": {
+    "MEDIUM": 8,
+    "LOW": 4
+  },
+  "dedup_radius_m": 500.0,
+  "dedup_time_minutes": 90,
+  "cluster_radius_m": 300.0,
+  "cluster_min_observations": 2,
+  "generated_at": "2026-11-18T09:56:20.845724+00:00"
+}
