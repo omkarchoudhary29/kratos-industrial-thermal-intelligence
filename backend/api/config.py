@@ -1,0 +1,26 @@
+"""
+api/config.py — Public frontend feature flags.
+GET /api/config
+"""
+
+import os
+from flask import Blueprint, jsonify
+
+config_bp = Blueprint("config", __name__)
+
+
+@config_bp.route("/", methods=["GET"])
+def get_config():
+    has_sentinel = bool(
+        os.environ.get("SENTINELHUB_CLIENT_ID", "").strip() and
+        os.environ.get("SENTINELHUB_CLIENT_SECRET", "").strip()
+    )
+    carto_key = (
+        os.environ.get("CARTO_API_KEY", "").strip() or
+        os.environ.get("VITE_CARTO_API_KEY", "").strip() or
+        os.environ.get("MAP_TILE_KEY", "").strip()
+    )
+    return jsonify({
+        "sentinel_enabled": has_sentinel,   # tells frontend whether to show Satellite button
+        "carto_api_key": carto_key or None, # public basemap key if configured
+    }), 200
