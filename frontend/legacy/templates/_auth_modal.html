@@ -1,0 +1,30 @@
+<!-- ══════════════════════════════════════════════════════════
+     AUTH MODAL
+══════════════════════════════════════════════════════════ -->
+<div id="auth-modal-overlay" class="modal-overlay">
+  <div id="auth-modal">
+    <div class="auth-modal-header">
+      <span id="auth-modal-title">Sign in to continue</span>
+    </div>
+    <p id="auth-blurb">
+      Sign in to access industrial thermal observations, reports, and monitoring tools.
+    </p>
+    <form id="auth-form">
+      <label class="auth-field">
+        <span>Username</span>
+        <input id="auth-username" name="username" type="text" minlength="3" maxlength="50" autocomplete="username" required>
+      </label>
+      <label class="auth-field hidden" id="auth-email-row">
+        <span>Email <small>(optional)</small></span>
+        <input id="auth-email" name="email" type="email" maxlength="255" autocomplete="email">
+      </label>
+      <label class="auth-field">
+        <span>Password</span>
+        <input id="auth-password" name="password" type="password" minlength="8" maxlength="72" autocomplete="current-password" required>
+      </label>
+      <button type="submit" id="auth-submit-btn" class="auth-submit-btn">Sign in</button>
+    </form>
+    <button type="button" id="auth-mode-toggle" class="auth-mode-toggle">Need an account? Register</button>
+    <div id="auth-error"></div>
+  </div>
+</div>
