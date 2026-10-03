@@ -1,0 +1,40 @@
+[Unit]
+Description=KRATOS V3.1 Industrial Thermal Intelligence WSGI Service
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=notify
+User=kratos
+Group=kratos
+WorkingDirectory=/opt/kratos/backend
+Environment="PATH=/opt/kratos/.venv/bin:/usr/local/bin:/usr/bin"
+EnvironmentFile=/etc/kratos/kratos.env
+
+# Execute Gunicorn via gthread worker model
+ExecStart=/opt/kratos/.venv/bin/gunicorn \
+    -c /opt/kratos/backend/gunicorn.conf.py \
+    wsgi:app
+
+# Process lifecycle & supervision
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=35
+Restart=on-failure
+RestartSec=5s
+
+# Security sandboxing
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/kratos/data /opt/kratos/backups /var/log/kratos
+PrivateTmp=true
+LimitNOFILE=65536
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=kratos-api
+
+[Install]
+WantedBy=multi-user.target
