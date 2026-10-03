@@ -1,0 +1,58 @@
+name: Backend CI & Regression Suite
+
+on:
+  push:
+    branches: [ main, develop, 'phase-*' ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Backend Tests & PostGIS Validation
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: wildfire_test_db
+          POSTGRES_USER: wildfire_test_user
+          POSTGRES_PASSWORD: test_password_secure_123
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpq-dev gdal-bin libgdal-dev
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-mock anyio
+
+      - name: Execute Automated Regression Tests
+        env:
+          TESTING: '1'
+          ALLOW_SQLITE_FALLBACK: '1'
+          JWT_SECRET_KEY: 'ci-pipeline-secure-test-secret-key-64-bytes-long-ci-token'
+          TEST_DATABASE_URL: 'postgresql+psycopg2://wildfire_test_user:test_password_secure_123@localhost:5432/wildfire_test_db'
+          APP_MODE: 'development'
+        run: |
+          pytest backend/tests/ -v
