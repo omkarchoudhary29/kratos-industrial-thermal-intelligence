@@ -31,6 +31,55 @@ def setup_db(app) -> None:
             _migrate_field_reports(db)
             _migrate_fire_events(db)
         seed_db()
+        if db.engine.dialect.name == "postgresql":
+            _run_sql_migrations(db)
+
+
+def _run_sql_migrations(db) -> None:
+    """Apply versioned PostgreSQL migrations once, after ORM tables exist."""
+    from pathlib import Path
+    from sqlalchemy import text
+
+    migrations_dir = Path(__file__).resolve().parents[2] / "db" / "migrations"
+    if not migrations_dir.is_dir():
+        raise RuntimeError(f"Database migrations directory is missing: {migrations_dir}")
+
+    priority = {
+        "20231115_create_osm_facilities_table.sql": 1,
+        "20231115_create_source_clusters_view.sql": 2,
+        "20231115_create_ingestion_audit_view.sql": 3,
+        "20231116_create_reports_and_followups.sql": 4,
+        "20261116_phase3_operational_platform.sql": 5,
+        "20261116_final_hardening_audit_and_test_isolation.sql": 6,
+        "20261117_cryptographic_audit_hash_chain.sql": 7,
+    }
+    sql_files = sorted(
+        migrations_dir.glob("*.sql"),
+        key=lambda path: (priority.get(path.name, 100), path.name),
+    )
+
+    with db.engine.begin() as connection:
+        connection.execute(text(
+            "CREATE TABLE IF NOT EXISTS schema_migrations ("
+            "version VARCHAR(255) PRIMARY KEY, "
+            "applied_at TIMESTAMP WITH TIME ZONE DEFAULT NOW())"
+        ))
+        applied = {
+            row[0] for row in connection.execute(
+                text("SELECT version FROM schema_migrations")
+            ).fetchall()
+        }
+
+        for migration in sql_files:
+            if migration.name in applied:
+                continue
+            sql = migration.read_text(encoding="utf-8")
+            connection.execute(text(sql))
+            connection.execute(
+                text("INSERT INTO schema_migrations (version) VALUES (:version)"),
+                {"version": migration.name},
+            )
+            print(f"[db] applied schema migration: {migration.name}")
 
 
 def _migrate_live_fire_monitoring(db) -> None:
