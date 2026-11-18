@@ -44,8 +44,7 @@ WHERE feature_id LIKE '%test_%'
 UPDATE investigation_reports
 SET is_test = TRUE,
     summary_text = COALESCE(summary_text, '') || ' [TEST_PROVENANCE: Automated test report]'
-WHERE id >= 35 
-   OR title ILIKE '%Comprehensive Bastar Corridor Environmental Audit%'
+WHERE title ILIKE '%Comprehensive Bastar Corridor Environmental Audit%'
    OR title ILIKE '%Eastern Industrial Corridor Viewport Dossier%'
    OR title ILIKE '%Korba Approval Workflow Audit%';
 
