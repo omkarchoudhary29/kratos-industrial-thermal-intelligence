@@ -187,8 +187,7 @@ def _synthesize_offline_response(
         )
         return
 
-    yield "> **[SYSTEM NOTICE: LLM Provider Offline / Local Telemetry Mode]**\n"
-    yield f"> *External inference unavailable ({type(error).__name__}). Grounded directly in verified operational context.*\n\n"
+    yield "### Operational Evidence Context\n"
 
     evidence_block = (retrieved_evidence or {}).get("evidence", {})
     region = evidence_block.get("region", {})
