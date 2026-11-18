@@ -6,10 +6,14 @@ Strictly requires TEST_DATABASE_URL environment variable; never falls back to DA
 """
 
 import os
+import socket
 import sys
+import threading
+import time
 from pathlib import Path
 import pytest
 from dotenv import load_dotenv
+from werkzeug.serving import make_server
 
 BACKEND_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BACKEND_DIR.parent
@@ -84,4 +88,23 @@ def ensure_test_database_isolation():
             )
             db.session.commit()
 
+    # Some integration tests use requests against localhost. Start the WSGI
+    # server as part of this session fixture so they are self-contained.
+    server = make_server("127.0.0.1", 5000, app, threaded=True)
+    server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+    server_thread.start()
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        try:
+            with socket.create_connection(("127.0.0.1", 5000), timeout=0.25):
+                break
+        except OSError:
+            time.sleep(0.1)
+    else:
+        server.shutdown()
+        raise RuntimeError("CI Flask test server failed to start on 127.0.0.1:5000")
+
     yield
+
+    server.shutdown()
+    server_thread.join(timeout=5)
