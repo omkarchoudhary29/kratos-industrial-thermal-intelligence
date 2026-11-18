@@ -232,7 +232,7 @@ def _run_thermal_monitoring_stage(event, ts, study) -> None:
 
 
 def _run_weather_stage(event, ts, study, pbar=None) -> None:
-    from pipeline.weather import build_weather_forecast
+    from pipeline.weather import build_weather_forecast, ensure_open_meteo_forecast
     from tqdm import tqdm
 
     out_dir = _timestep_dir(event.id, event.year, ts.slot_time) / "weather"
@@ -245,6 +245,22 @@ def _run_weather_stage(event, ts, study, pbar=None) -> None:
         if t1.tzinfo is not None:
             t1 = t1.tz_localize(None)
         build_weather_forecast(study=study, t1=t1, out_dir=out_dir)
+
+        # ERA5 parquet is not packaged for newly provisioned monitoring regions.
+        # Use the existing cached Open-Meteo point forecast as an explicit
+        # fallback rather than silently leaving the weather panel empty.
+        if not (out_dir / "forecast.json").exists():
+            records = ensure_open_meteo_forecast(event, t1, out_dir)
+            if records:
+                log.info(
+                    "[weather] Open-Meteo fallback supplied %d hourly records for event %d",
+                    len(records), event.id,
+                )
+            else:
+                log.warning(
+                    "[weather] no ERA5 or Open-Meteo forecast available for event %d",
+                    event.id,
+                )
         print(f"[weather_stage] ts={ts.id} done")
     except Exception as e:
         print(f"[weather_stage] ts={ts.id} FAILED: {e}")
