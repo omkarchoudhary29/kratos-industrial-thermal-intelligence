@@ -32,9 +32,9 @@ log = logging.getLogger("osm_import")
 CACHE_DIR = REPO_ROOT / "data" / "raw" / "osm"
 
 OVERPASS_ENDPOINTS = [
-    "https://overpass.kumi.systems/api/interpreter",
     "https://overpass-api.de/api/interpreter",
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
 ]
 
 
@@ -104,7 +104,7 @@ MONITORING_REGIONS = [
 
 import ssl
 
-ssl_ctx = ssl._create_unverified_context()
+ssl_ctx = ssl.create_default_context()
 
 def build_overpass_query(bbox: Tuple[float, float, float, float]) -> str:
     s, w, n, e = bbox

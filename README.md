@@ -431,8 +431,8 @@ Open `http://localhost:5173` in your browser.
 | `ADMIN_PASSWORD` | *(Change before deploy)* | Yes | Initial administrator password. |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:5173,http://localhost:5000` | Yes | Comma-separated list of permitted CORS origins. Never set to `*` in production. |
 | `WAITRESS_THREADS` | `8` | No | Number of worker threads for the Waitress production WSGI server. |
-| `LLM_PROVIDER` | `gemini` | No | AI provider for the Investigator agent (`gemini`, `claude`, or `none`). |
-| `GEMINI_API_KEY` | *(Optional)* | No | Google AI Studio API key for Gemini 1.5/2.0 Flash reasoning. |
+| `LLM_PROVIDER` | `claude` (code default) | No | AI provider for the Investigator agent (`gemini`, `claude`, or `none`). Set `gemini` explicitly when using Google AI Studio. |
+| `GEMINI_API_KEY` | *(Required when `LLM_PROVIDER=gemini`)* | No | Google AI Studio key. Current code defaults to `gemini-3.1-flash-lite` with `gemini-3.6-flash` as fallback unless model variables override them. |
 | `ANTHROPIC_API_KEY` | *(Optional)* | No | Anthropic API key for Claude 3.5 Sonnet reasoning. |
 | `FIRMS_API_KEY` | *(Optional)* | No | NASA LANCE FIRMS MAP_KEY for near-real-time satellite ingestion. |
 

@@ -255,7 +255,15 @@ def test_j_api_endpoints():
 
     # /facility-profile
     r2 = client.get("/api/v1/intelligence/facility-profile?facility_id=1")
-    assert r2.status_code == 200
+    # A clean CI database may not contain facility id=1. The endpoint is
+    # correctly allowed to return 404 for a missing resource; distinguish that
+    # from a missing route (404 with Flask's generic HTML body).
+    assert r2.status_code in (200, 404)
+    if r2.status_code == 200:
+        assert r2.get_json().get("status") == "success"
+        assert "facility_profile" in r2.get_json()
+    else:
+        assert r2.get_json().get("status") == "not_found"
 
     # /historical-baseline
     r3 = client.get("/api/v1/intelligence/historical-baseline?region=dhanbad_bokaro&frp=25")
