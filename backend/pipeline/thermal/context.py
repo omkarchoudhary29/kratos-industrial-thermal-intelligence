@@ -34,10 +34,10 @@ MIDC_BOUNDARY_URL = (
 )
 OVERPASS_URLS = (
     "https://overpass-api.de/api/interpreter",
-    "https://overpass.kumi.systems/api/interpreter",
-    # Independent global fallback for periods when the primary instances
-    # return 5xx responses or time out from the production region.
+    # Public global-coverage fallback instances, tried when the primary
+    # endpoint is unavailable or rate-limited.
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
 )
 WORLDCOVER_URL = (
     "https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/"
