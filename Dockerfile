@@ -45,11 +45,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/ ./backend/
 COPY frontend/legacy/ ./frontend/legacy/
 COPY --from=frontend-builder /build/dist ./frontend/dist
+COPY docs/api.yaml ./docs/api.yaml
 
 # Immutable presentation artifacts live outside /app/data so an empty Railway
 # volume mounted at /app/data cannot hide them on first deploy.
 COPY data/processed/final_fused_events.parquet ./runtime_artifacts/final_fused_events.parquet
 COPY data/processed/thermal_sources.parquet ./runtime_artifacts/thermal_sources.parquet
+COPY data/processed/facility_association_summary.json ./runtime_artifacts/facility_association_summary.json
+COPY models/industrial_iforest_train_2021_2024.joblib ./runtime_artifacts/industrial_iforest_train_2021_2024.joblib
 COPY models/industrial_iforest_train_2021_2024.joblib ./models/industrial_iforest_train_2021_2024.joblib
 
 WORKDIR /app/backend

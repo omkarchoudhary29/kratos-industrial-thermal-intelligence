@@ -6,7 +6,7 @@ import os
 bind = f"0.0.0.0:{os.getenv('PORT', '5000')}"
 
 # Concurrency & Worker configuration
-workers = int(os.getenv("WEB_CONCURRENCY", "3"))
+workers = int(os.getenv("WEB_CONCURRENCY", "1"))
 
 # Use gthread worker model for native multithreading and SSE streaming compatibility
 worker_class = "gthread"

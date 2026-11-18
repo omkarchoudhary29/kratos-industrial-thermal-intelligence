@@ -81,7 +81,7 @@ def get_refresh_settings() -> dict:
     if failure_retry < 1 or failure_retry > 60:
         raise ValueError("THERMAL_FAILURE_RETRY_MINUTES must be between 1 and 60")
     return {
-        "enabled": _enabled(os.getenv("THERMAL_AUTO_REFRESH"), default=True),
+        "enabled": _enabled(os.getenv("THERMAL_AUTO_REFRESH"), default=False),
         "interval_minutes": interval_minutes,
         "interval_hours": interval_minutes / 60.0,
         "lookback_days": lookback,

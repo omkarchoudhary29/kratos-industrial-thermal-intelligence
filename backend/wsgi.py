@@ -19,7 +19,7 @@ with app.app_context():
 
 # Background scheduler guard: only start background scheduler if explicitly enabled
 # and avoid duplicate schedulers across multiple workers
-if os.getenv("ENABLE_BACKGROUND_SCHEDULER", "1").lower() in ("1", "true", "yes"):
+if os.getenv("ENABLE_BACKGROUND_SCHEDULER", "0").lower() in ("1", "true", "yes"):
     from pipeline.thermal.refresh import (
         bootstrap_cached_firms,
         start_thermal_refresh_scheduler,

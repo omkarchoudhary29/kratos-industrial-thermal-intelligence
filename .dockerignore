@@ -36,6 +36,7 @@ backups/
 screenshots/
 assets/
 docs/
+!docs/api.yaml
 *.md
 !README.md
 

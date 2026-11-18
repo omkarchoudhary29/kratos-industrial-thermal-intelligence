@@ -445,7 +445,7 @@ def ensure_thermal_history(event, study) -> dict | None:
     if config.analysis_mode != THERMAL_MONITORING_MODE:
         return None
 
-    auto_fetch = os.getenv("FIRMS_HISTORY_AUTO_FETCH", "1").strip().lower()
+    auto_fetch = os.getenv("FIRMS_HISTORY_AUTO_FETCH", "0").strip().lower()
     if auto_fetch not in {"0", "false", "no", "off"}:
         collect_firms_history(event, study)
     paths = ThermalHistoryPaths.from_study(study)

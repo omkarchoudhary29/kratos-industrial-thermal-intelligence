@@ -22,11 +22,20 @@ def create_app():
 
     # ── Environment-Governed CORS Hardening ────────────────────────────────────
     raw_origins = os.getenv("CORS_ALLOWED_ORIGINS")
-    is_prod = os.getenv("PRODUCTION", "0").lower() in ("1", "true", "yes") or os.getenv("ENV") == "production"
+    app_mode = os.getenv("APP_MODE", "").strip().lower()
+    is_prod = (os.getenv("PRODUCTION", "0").lower() in ("1", "true", "yes") or os.getenv("ENV") == "production") and app_mode != "demo"
+    railway_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN", "").strip()
 
     if raw_origins:
         allowed_origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
-    elif not is_prod:
+    elif railway_domain:
+        allowed_origins = [
+            f"https://{railway_domain}",
+            f"http://{railway_domain}",
+            "http://localhost:5173",
+            "http://localhost:5000",
+        ]
+    elif not is_prod or app_mode == "demo":
         # Default permitted development & staging origins
         allowed_origins = [
             "http://localhost:5173",
@@ -164,6 +173,27 @@ def create_app():
         if DIST_DIR.exists() and (DIST_DIR / 'assets').exists():
             return send_from_directory(str(DIST_DIR / 'assets'), filename)
         return ('Asset not found', 404)
+
+    @app.errorhandler(404)
+    def handle_404(e):
+        """Serve React SPA index.html for direct client-side routes on refresh."""
+        path = request.path
+        if (
+            path.startswith("/api/")
+            or path.startswith("/auth/")
+            or path.startswith("/assets/")
+            or path.startswith("/css/")
+            or path.startswith("/js/")
+            or path.startswith("/demo/")
+            or path.startswith("/legacy/")
+            or path in ("/openapi.yaml", "/docs", "/docs/", "/health")
+        ):
+            return {"error": "Not Found", "path": path}, 404
+        if request.method == "GET":
+            if DIST_DIR.exists() and (DIST_DIR / 'index.html').exists():
+                return send_from_directory(str(DIST_DIR), 'index.html')
+            return send_from_directory(str(FRONTEND_DIR), 'index.html')
+        return {"error": "Not Found", "path": path}, 404
 
     @app.route('/health')
     def health():
@@ -329,13 +359,16 @@ if __name__ == '__main__':
                 "using prepared thermal intelligence artifacts ==="
             )
 
-        from pipeline.thermal.refresh import (
-            bootstrap_cached_firms,
-            start_thermal_refresh_scheduler,
-        )
-        print("=== [thermal-live] Importing recent cached FIRMS detections ===")
-        bootstrap_cached_firms(app)
-        start_thermal_refresh_scheduler(app)
+        if os.getenv("ENABLE_BACKGROUND_SCHEDULER", "0").lower() in ("1", "true", "yes"):
+            from pipeline.thermal.refresh import (
+                bootstrap_cached_firms,
+                start_thermal_refresh_scheduler,
+            )
+            print("=== [thermal-live] Importing recent cached FIRMS detections ===")
+            bootstrap_cached_firms(app)
+            start_thermal_refresh_scheduler(app)
+        else:
+            print("=== [thermal-live] Background thermal refresh scheduler disabled for demo/preview stability ===")
 
     threading.Thread(target=_run_pipeline, daemon=True).start()
 

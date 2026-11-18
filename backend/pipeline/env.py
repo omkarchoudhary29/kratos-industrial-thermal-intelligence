@@ -674,7 +674,7 @@ def _prebuild_population(event, study) -> None:
 
 def _download_default_worldpop(destination: Path) -> None:
     """Provision the compact official India grid without sharing event geometry."""
-    enabled = os.getenv("WORLDPOP_AUTO_DOWNLOAD", "1").strip().lower()
+    enabled = os.getenv("WORLDPOP_AUTO_DOWNLOAD", "0").strip().lower()
     if enabled not in {"1", "true", "yes", "on"}:
         return
 

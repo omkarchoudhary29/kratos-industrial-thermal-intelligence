@@ -23,8 +23,10 @@ def _is_port_open(host: str, port: int, timeout: float = 1.0) -> bool:
         return False
 
 
-def _can_connect_postgres(user: str, password: str, host: str, port: int, dbname: str = "postgres") -> bool:
-    """Verify that PostgreSQL accepts credentials on the target host/port."""
+def _can_connect_postgres(
+    user: str, password: str, host: str, port: int, dbname: str = "postgres", connect_timeout: int = 2
+) -> bool:
+    """Verify that PostgreSQL accepts credentials on the target host/port and database."""
     try:
         import psycopg2
         conn = psycopg2.connect(
@@ -33,7 +35,7 @@ def _can_connect_postgres(user: str, password: str, host: str, port: int, dbname
             host=host,
             port=port,
             dbname=dbname,
-            connect_timeout=1,
+            connect_timeout=connect_timeout,
         )
         conn.close()
         return True
@@ -42,25 +44,37 @@ def _can_connect_postgres(user: str, password: str, host: str, port: int, dbname
 
 
 def get_db_uri() -> str:
-    allow_fallback = os.getenv("ALLOW_SQLITE_FALLBACK", "1").strip().lower() in {"1", "true", "yes"}
+    app_mode = os.getenv("APP_MODE", "").strip().lower()
+    env = os.getenv("ENV", "").strip().lower()
+    is_production_like = app_mode in ("production", "demo") or env == "production"
+
+    allow_fallback_env = os.getenv("ALLOW_SQLITE_FALLBACK")
+    if allow_fallback_env is not None:
+        allow_fallback = allow_fallback_env.strip().lower() in {"1", "true", "yes"}
+    else:
+        # In production or demonstration mode, never default to SQLite fallback.
+        # Fallback is only allowed in local development when unconfigured.
+        allow_fallback = not is_production_like
 
     database_url = os.getenv("DATABASE_URL", "").strip()
     if database_url:
         parsed = urlparse(database_url)
-        # If PostgreSQL URL and credentials fail, allow graceful fallback
+        # If PostgreSQL URL and credentials fail, allow graceful fallback only in dev
         if parsed.scheme in ("postgresql", "postgresql+psycopg2", "postgres"):
-            if _can_connect_postgres(
-                user=unquote(parsed.username) if parsed.username else "postgres",
-                password=unquote(parsed.password) if parsed.password else "",
-                host=parsed.hostname or "localhost",
-                port=parsed.port or 5432,
-                dbname="postgres",
-            ):
+            db_target = parsed.path.lstrip("/") or "postgres"
+            username = unquote(parsed.username) if parsed.username else "postgres"
+            password = unquote(parsed.password) if parsed.password else ""
+            host = parsed.hostname or "localhost"
+            port = parsed.port or 5432
+
+            if _can_connect_postgres(username, password, host, port, dbname=db_target) or \
+               _can_connect_postgres(username, password, host, port, dbname="postgres"):
                 if database_url.startswith("postgresql://"):
                     return database_url.replace("postgresql://", "postgresql+psycopg2://", 1)
                 if database_url.startswith("postgres://"):
                     return database_url.replace("postgres://", "postgresql+psycopg2://", 1)
                 return database_url
+
             if allow_fallback:
                 DEFAULT_SQLITE_PATH.parent.mkdir(parents=True, exist_ok=True)
                 sqlite_uri = f"sqlite:///{DEFAULT_SQLITE_PATH.as_posix()}"
@@ -69,6 +83,11 @@ def get_db_uri() -> str:
                     sqlite_uri,
                 )
                 return sqlite_uri
+            raise RuntimeError(
+                f"PostgreSQL connection failed for DATABASE_URL (host={host}:{port}, db={db_target}, user={username}). "
+                f"SQLite fallback is disabled in {app_mode or env or 'production'} mode. "
+                "Verify your database credentials and ensure PostgreSQL/PostGIS is running."
+            )
 
     host = os.getenv("DB_HOST", "localhost")
     port = int(os.getenv("DB_PORT", "5432"))
@@ -76,20 +95,29 @@ def get_db_uri() -> str:
     password = os.getenv("DB_PASSWORD", "password")
     dbname = os.getenv("DB_NAME", "wildfire_db")
 
+    quoted_user = quote_plus(user)
     quoted_pw = quote_plus(password)
+    pg_uri = f"postgresql+psycopg2://{quoted_user}:{quoted_pw}@{host}:{port}/{dbname}"
+
     # If PostgreSQL host is reachable and credentials connect, use Postgres
-    if _is_port_open(host, port, timeout=0.8):
-        if _can_connect_postgres(user, password, host, port, dbname="postgres"):
-            return f"postgresql+psycopg2://{user}:{quoted_pw}@{host}:{port}/{dbname}"
+    if _is_port_open(host, port, timeout=1.0):
+        if _can_connect_postgres(user, password, host, port, dbname=dbname) or \
+           _can_connect_postgres(user, password, host, port, dbname="postgres"):
+            return pg_uri
         if allow_fallback:
             DEFAULT_SQLITE_PATH.parent.mkdir(parents=True, exist_ok=True)
             sqlite_uri = f"sqlite:///{DEFAULT_SQLITE_PATH.as_posix()}"
             log.warning(
-                "PostgreSQL port 5432 is open, but authentication failed for user '%s'; falling back to SQLite: %s",
+                "PostgreSQL port %d is open, but authentication failed for user '%s'; falling back to SQLite: %s",
+                port,
                 user,
                 sqlite_uri,
             )
             return sqlite_uri
+        raise RuntimeError(
+            f"PostgreSQL port {port} is reachable at {host}, but authentication failed for user '{user}' "
+            f"on database '{dbname}'. SQLite fallback is disabled in {app_mode or env or 'production'} mode."
+        )
 
     # Graceful fallback for local development without local PostgreSQL
     if allow_fallback:
@@ -98,7 +126,10 @@ def get_db_uri() -> str:
         log.info("PostgreSQL not reachable at %s:%s; using local SQLite: %s", host, port, sqlite_uri)
         return sqlite_uri
 
-    return f"postgresql+psycopg2://{user}:{quoted_pw}@{host}:{port}/{dbname}"
+    raise RuntimeError(
+        f"PostgreSQL server is unreachable at {host}:{port} and SQLite fallback is disabled. "
+        "Check network connection and database service status."
+    )
 
 
 def ensure_db():
@@ -106,7 +137,7 @@ def ensure_db():
 
     SQLAlchemy's create_all() can only create tables — not the database itself.
     This function runs before create_all() to guarantee the database exists
-    and PostGIS is enabled, so the app can start without any manual setup.
+    and PostGIS is enabled, so the app can start without manual intervention.
     """
     db_uri = get_db_uri()
     if db_uri.startswith("sqlite"):
@@ -122,7 +153,7 @@ def ensure_db():
     database_url = os.getenv("DATABASE_URL", "").strip()
     if database_url:
         parsed = urlparse(database_url)
-        db_name = parsed.path.lstrip("/")
+        db_name = parsed.path.lstrip("/") or "wildfire_db"
         conn_args = dict(
             host=parsed.hostname or "localhost",
             port=parsed.port or 5432,
@@ -133,29 +164,55 @@ def ensure_db():
         db_name = os.getenv("DB_NAME", "wildfire_db")
         conn_args = dict(
             host=os.getenv("DB_HOST", "localhost"),
-            port=os.getenv("DB_PORT", "5432"),
+            port=int(os.getenv("DB_PORT", "5432")),
             user=os.getenv("DB_USER", "postgres"),
             password=os.getenv("DB_PASSWORD", ""),
         )
 
-    # Step 1: connect to the default 'postgres' DB to create our database
-    conn = psycopg2.connect(**conn_args, dbname="postgres")
-    conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-    cur = conn.cursor()
-    cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (db_name,))
-    if not cur.fetchone():
-        cur.execute(f'CREATE DATABASE "{db_name}"')
-        print(f"[db] created database '{db_name}'")
-    cur.close()
-    conn.close()
+    # Cloud-first strategy: Connect directly to db_name first.
+    # On managed providers (e.g., Railway, Supabase, Neon), the application user
+    # does NOT have privileges on or access to the default 'postgres' database.
+    try:
+        conn = psycopg2.connect(**conn_args, dbname=db_name)
+        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        cur = conn.cursor()
+        try:
+            cur.execute("CREATE EXTENSION IF NOT EXISTS postgis;")
+            log.info("[db] PostGIS extension verified on database '%s'", db_name)
+        except Exception as ext_err:
+            log.warning("[db] CREATE EXTENSION postgis note: %s", ext_err)
+        finally:
+            cur.close()
+            conn.close()
+        return
+    except psycopg2.OperationalError as op_err:
+        err_msg = str(op_err).lower()
+        if "does not exist" not in err_msg:
+            log.warning("[db] Direct connect to '%s' note: %s; attempting creation via maintenance DB", db_name, op_err)
 
-    # Step 2: connect to our database and enable the PostGIS extension
-    conn2 = psycopg2.connect(**conn_args, dbname=db_name)
-    conn2.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-    cur2 = conn2.cursor()
-    cur2.execute("CREATE EXTENSION IF NOT EXISTS postgis")
-    cur2.close()
-    conn2.close()
+    # Step 2: If the database does not exist, connect to 'postgres' maintenance DB to create it
+    try:
+        conn_maint = psycopg2.connect(**conn_args, dbname="postgres")
+        conn_maint.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        cur_maint = conn_maint.cursor()
+        cur_maint.execute("SELECT 1 FROM pg_database WHERE datname = %s", (db_name,))
+        if not cur_maint.fetchone():
+            cur_maint.execute(f'CREATE DATABASE "{db_name}"')
+            log.info("[db] created database '%s'", db_name)
+        cur_maint.close()
+        conn_maint.close()
+
+        # Step 3: Now enable PostGIS on the newly created database
+        conn_target = psycopg2.connect(**conn_args, dbname=db_name)
+        conn_target.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        cur_target = conn_target.cursor()
+        cur_target.execute("CREATE EXTENSION IF NOT EXISTS postgis;")
+        log.info("[db] PostGIS extension initialized on '%s'", db_name)
+        cur_target.close()
+        conn_target.close()
+    except Exception as exc:
+        log.error("[db] Unable to ensure database '%s': %s", db_name, exc)
+        raise
 
 
 def seed_db():

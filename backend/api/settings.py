@@ -7,7 +7,7 @@ from typing import Any, Dict
 
 from flask import Blueprint, jsonify, request
 from services.settings_service import settings_service
-from utils.auth_middleware import _decode_access_token
+from utils.auth_middleware import _decode_access_token, block_in_demo_mode
 
 settings_bp = Blueprint("settings", __name__, url_prefix="/api/v1/settings")
 
@@ -38,6 +38,7 @@ def get_monitoring_settings():
 
 
 @settings_bp.post("/monitoring")
+@block_in_demo_mode("Updating operational monitoring thresholds is disabled in public demo mode.")
 def update_monitoring_settings():
     """Update operational monitoring thresholds."""
     body: Dict[str, Any] = request.get_json(silent=True) or {}
