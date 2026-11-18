@@ -14,12 +14,20 @@ from typing import Any
 import joblib
 import numpy as np
 import pandas as pd
+from services.artifact_resolver import get_events_parquet_path, get_iforest_model_path
 
 log = logging.getLogger(__name__)
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-MODEL_PATH = PROJECT_DIR / "models" / "industrial_iforest_train_2021_2024.joblib"
-EVENTS_PATH = PROJECT_DIR / "data" / "processed" / "final_fused_events.parquet"
+try:
+    MODEL_PATH = get_iforest_model_path()
+except Exception:
+    MODEL_PATH = PROJECT_DIR / "models" / "industrial_iforest_train_2021_2024.joblib"
+
+try:
+    EVENTS_PATH = get_events_parquet_path()
+except Exception:
+    EVENTS_PATH = PROJECT_DIR / "data" / "processed" / "final_fused_events.parquet"
 
 
 class MLEvaluationService:

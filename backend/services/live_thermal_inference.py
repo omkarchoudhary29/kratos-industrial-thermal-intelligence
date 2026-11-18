@@ -18,15 +18,16 @@ import joblib
 import numpy as np
 import pandas as pd
 from sklearn.cluster import DBSCAN
+from services.artifact_resolver import get_iforest_model_path
 
 
 log = logging.getLogger(__name__)
 PROJECT_DIR = Path(__file__).resolve().parents[2]
 DATA_DIR = PROJECT_DIR / "data" / "events"
-MODEL_PATH = Path(os.getenv(
-    "THERMAL_IFOREST_MODEL_PATH",
-    str(PROJECT_DIR / "models" / "industrial_iforest_train_2021_2024.joblib"),
-))
+try:
+    MODEL_PATH = Path(os.getenv("THERMAL_IFOREST_MODEL_PATH", "")) if os.getenv("THERMAL_IFOREST_MODEL_PATH") else get_iforest_model_path()
+except Exception:
+    MODEL_PATH = PROJECT_DIR / "models" / "industrial_iforest_train_2021_2024.joblib"
 EARTH_RADIUS_KM = 6371.0088
 GRID_DEGREES = 0.01
 SOURCE_RADIUS_KM = 1.0

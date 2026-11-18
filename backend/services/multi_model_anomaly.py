@@ -23,11 +23,15 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import joblib
 import numpy as np
 import pandas as pd
+from services.artifact_resolver import get_iforest_model_path
 
 log = logging.getLogger("multi_model_anomaly")
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-IFOREST_MODEL_PATH = PROJECT_DIR / "models" / "industrial_iforest_train_2021_2024.joblib"
+try:
+    IFOREST_MODEL_PATH = get_iforest_model_path()
+except Exception:
+    IFOREST_MODEL_PATH = PROJECT_DIR / "models" / "industrial_iforest_train_2021_2024.joblib"
 
 
 class MultiModelAnomalyEngine:

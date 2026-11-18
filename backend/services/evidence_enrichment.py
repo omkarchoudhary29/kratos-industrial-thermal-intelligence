@@ -27,6 +27,7 @@ import pandas as pd
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+from services.artifact_resolver import get_events_parquet_path, get_sources_parquet_path
 from services.baseline_engine import baseline_engine
 from services.facility_intelligence import facility_intelligence
 from services.multi_model_anomaly import multi_model_anomaly
@@ -36,8 +37,15 @@ from services.source_classification import source_classification_engine
 log = logging.getLogger("evidence_enrichment")
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-EVENTS_PATH = PROJECT_DIR / "data" / "processed" / "final_fused_events.parquet"
-SOURCES_PATH = PROJECT_DIR / "data" / "processed" / "thermal_sources.parquet"
+try:
+    EVENTS_PATH = get_events_parquet_path()
+except Exception:
+    EVENTS_PATH = PROJECT_DIR / "data" / "processed" / "final_fused_events.parquet"
+
+try:
+    SOURCES_PATH = get_sources_parquet_path()
+except Exception:
+    SOURCES_PATH = PROJECT_DIR / "data" / "processed" / "thermal_sources.parquet"
 def _get_database_url() -> str:
     """Safely obtain raw database connection URL from environment or configuration."""
     try:

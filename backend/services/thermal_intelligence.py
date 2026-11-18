@@ -17,16 +17,20 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import numpy as np
 import pandas as pd
 
+from services.artifact_resolver import get_events_parquet_path, get_sources_parquet_path
 from services.live_thermal_inference import live_thermal_inference
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-LOCAL_EVENTS_PATH = PROJECT_DIR / "data" / "processed" / "final_fused_events.parquet"
-LOCAL_SOURCES_PATH = PROJECT_DIR / "data" / "processed" / "thermal_sources.parquet"
-BUNDLED_EVENTS_PATH = PROJECT_DIR / "runtime_artifacts" / "final_fused_events.parquet"
-BUNDLED_SOURCES_PATH = PROJECT_DIR / "runtime_artifacts" / "thermal_sources.parquet"
-DEFAULT_EVENTS_PATH = LOCAL_EVENTS_PATH if LOCAL_EVENTS_PATH.exists() else BUNDLED_EVENTS_PATH
-DEFAULT_SOURCES_PATH = LOCAL_SOURCES_PATH if LOCAL_SOURCES_PATH.exists() else BUNDLED_SOURCES_PATH
+try:
+    DEFAULT_EVENTS_PATH = get_events_parquet_path()
+except Exception:
+    DEFAULT_EVENTS_PATH = PROJECT_DIR / "data" / "processed" / "final_fused_events.parquet"
+
+try:
+    DEFAULT_SOURCES_PATH = get_sources_parquet_path()
+except Exception:
+    DEFAULT_SOURCES_PATH = PROJECT_DIR / "data" / "processed" / "thermal_sources.parquet"
 
 MAP_FIELDS = (
     "source_event_id",

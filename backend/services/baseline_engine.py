@@ -30,11 +30,20 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 
+from services.artifact_resolver import get_events_parquet_path, get_sources_parquet_path
+
 log = logging.getLogger("baseline_engine")
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-EVENTS_PATH = PROJECT_DIR / "data" / "processed" / "final_fused_events.parquet"
-SOURCES_PATH = PROJECT_DIR / "data" / "processed" / "thermal_sources.parquet"
+try:
+    EVENTS_PATH = get_events_parquet_path()
+except Exception:
+    EVENTS_PATH = PROJECT_DIR / "data" / "processed" / "final_fused_events.parquet"
+
+try:
+    SOURCES_PATH = get_sources_parquet_path()
+except Exception:
+    SOURCES_PATH = PROJECT_DIR / "data" / "processed" / "thermal_sources.parquet"
 
 
 def _json_safe(v: Any) -> Any:

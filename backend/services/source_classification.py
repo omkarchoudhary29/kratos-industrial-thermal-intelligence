@@ -21,13 +21,29 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+from services.artifact_resolver import (
+    get_events_parquet_path,
+    get_facility_summary_path,
+    get_sources_parquet_path,
+)
 
 log = logging.getLogger("source_classification")
 
 PROJECT_DIR = Path(__file__).resolve().parents[2]
-EVENTS_PATH = PROJECT_DIR / "data" / "processed" / "final_fused_events.parquet"
-SOURCES_PATH = PROJECT_DIR / "data" / "processed" / "thermal_sources.parquet"
-FACILITY_SUMMARY_PATH = PROJECT_DIR / "data" / "processed" / "facility_association_summary.json"
+try:
+    EVENTS_PATH = get_events_parquet_path()
+except Exception:
+    EVENTS_PATH = PROJECT_DIR / "data" / "processed" / "final_fused_events.parquet"
+
+try:
+    SOURCES_PATH = get_sources_parquet_path()
+except Exception:
+    SOURCES_PATH = PROJECT_DIR / "data" / "processed" / "thermal_sources.parquet"
+
+try:
+    FACILITY_SUMMARY_PATH = get_facility_summary_path()
+except Exception:
+    FACILITY_SUMMARY_PATH = PROJECT_DIR / "data" / "processed" / "facility_association_summary.json"
 
 
 class SourceClassificationEngine:
