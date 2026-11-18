@@ -5,6 +5,14 @@ import os
 import sys
 from pathlib import Path
 
+# Rasterio's PyPI wheel bundles a matching GDAL/PROJ runtime and its own
+# proj.db. Railway-level paths to Debian's separate PROJ installation can
+# override that bundled data and cause "Cannot find proj.db" at runtime.
+# Remove external overrides before importing the application or geospatial
+# packages so Rasterio/pyproj can resolve their wheel-provided data.
+for _geospatial_env in ("PROJ_DATA", "PROJ_LIB", "GDAL_DATA"):
+    os.environ.pop(_geospatial_env, None)
+
 BASE_DIR = Path(__file__).resolve().parent
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
