@@ -31,9 +31,6 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 ENV GDAL_CONFIG=/usr/bin/gdal-config \
-    GDAL_DATA=/usr/share/gdal \
-    PROJ_DATA=/usr/share/proj \
-    PROJ_LIB=/usr/share/proj \
     CPLUS_INCLUDE_PATH=/usr/include/gdal \
     C_INCLUDE_PATH=/usr/include/gdal \
     PYTHONDONTWRITEBYTECODE=1 \
